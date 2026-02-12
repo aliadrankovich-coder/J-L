@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивная модель: Закон Джоуля-Ленца</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes heat-vibration {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(1px, -1px); }
+            50% { transform: translate(-1px, 1px); }
+            75% { transform: translate(1px, 1px); }
+            100% { transform: translate(0, 0); }
+        }
+        .wire-vibrate {
+            animation: heat-vibration 0.1s infinite;
+        }
+        .glow {
+            filter: blur(8px);
+            transition: fill 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Header Section -->
+        <div class="lg:col-span-12 text-center mb-4">
+            <h1 class="text-3xl md:text-4xl font-bold text-orange-400 mb-2">Закон Джоуля — Ленца</h1>
+            <p class="text-slate-400 text-lg italic">Q = I² · R · t</p>
+        </div>
+
+        <!-- Left Column: Controls and Theory -->
+        <div class="lg:col-span-4 space-y-6">
+            <div class="bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700">
+                <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-orange-500"><path d="M12 2v20"/><path d="m4.93 4.93 14.14 14.14"/><path d="M2 12h20"/><path d="m19.07 4.93-14.14 14.14"/></svg>
+                    Параметры цепи
+                </h2>
+
+                <!-- Current Slider -->
+                <div class="mb-6">
+                    <div class="flex justify-between mb-2">
+                        <label class="text-sm font-medium">Сила тока (I): <span class="text-orange-400 font-mono" id="currentVal">2.0</span> А</label>
+                    </div>
+                    <input type="range" id="currentSlider" min="0" max="10" step="0.1" value="2" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-orange-500">
+                </div>
+
+                <!-- Resistance Slider -->
+                <div class="mb-6">
+                    <div class="flex justify-between mb-2">
+                        <label class="text-sm font-medium">Сопротивление (R): <span class="text-orange-400 font-mono" id="resVal">5.0</span> Ом</label>
+                    </div>
+                    <input type="range" id="resSlider" min="1" max="20" step="0.5" value="5" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-orange-500">
+                </div>
+
+                <!-- Time Slider -->
+                <div class="mb-6">
+                    <div class="flex justify-between mb-2">
+                        <label class="text-sm font-medium">Время (t): <span class="text-orange-400 font-mono" id="timeVal">1.0</span> с</label>
+                    </div>
+                    <input type="range" id="timeSlider" min="1" max="10" step="0.5" value="1" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-orange-500">
+                </div>
+
+                <div class="mt-8 p-4 bg-orange-500/10 border border-orange-500/20 rounded-xl text-center">
+                    <p class="text-sm text-slate-400 mb-1">Выделяемое тепло (Q):</p>
+                    <p class="text-4xl font-bold text-orange-400" id="heatResult">20.00 Дж</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700">
+                <h3 class="font-semibold text-lg mb-3">Суть закона</h3>
+                <p class="text-sm text-slate-400 leading-relaxed">
+                    Количество теплоты, выделяемое проводником с током, пропорционально <strong>квадрату силы тока</strong>, сопротивлению проводника и времени прохождения тока.
+                </p>
+                <div class="mt-4 flex flex-col gap-2 text-xs">
+                    <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-blue-400"></div> Синие стрелки: Поток электронов</div>
+                    <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-red-500"></div> Красное свечение: Нагрев</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Visualization -->
+        <div class="lg:col-span-8 space-y-6">
+            <!-- Visual Simulation Box -->
+            <div class="bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700 flex flex-col items-center">
+                <h3 class="text-lg font-semibold mb-6 self-start">Визуализация проводника</h3>
+                
+                <div class="relative w-full h-48 bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center border border-slate-700">
+                    <!-- Particle Container -->
+                    <div id="electronContainer" class="absolute inset-0 pointer-events-none"></div>
+                    
+                    <!-- Glow Layer -->
+                    <svg width="80%" height="40" class="absolute">
+                        <rect id="wireGlow" x="0" y="5" width="100%" height="30" rx="15" fill="rgba(255, 69, 0, 0)" class="glow" />
+                    </svg>
+
+                    <!-- The Wire -->
+                    <div id="wire" class="relative w-[80%] h-8 bg-slate-600 rounded-full border-2 border-slate-500 z-10 overflow-hidden">
+                        <!-- Internal Heat Texture -->
+                        <div id="wireHeat" class="absolute inset-0 opacity-0 transition-opacity duration-300" style="background: linear-gradient(90deg, #ff4500, #ff8c00, #ff4500);"></div>
+                    </div>
+
+                    <!-- Labels -->
+                    <div class="absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-widest text-slate-500 font-bold">Участок цепи (проводник)</div>
+                </div>
+            </div>
+
+            <!-- Plots / Graphs -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700">
+                    <h4 class="text-sm font-medium mb-4 text-slate-400">Зависимость Q от I²</h4>
+                    <canvas id="currentGraph" width="300" height="150"></canvas>
+                </div>
+                <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700">
+                    <h4 class="text-sm font-medium mb-4 text-slate-400">Зависимость Q от R</h4>
+                    <canvas id="resGraph" width="300" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const currentSlider = document.getElementById('currentSlider');
+        const resSlider = document.getElementById('resSlider');
+        const timeSlider = document.getElementById('timeSlider');
+        
+        const currentVal = document.getElementById('currentVal');
+        const resVal = document.getElementById('resVal');
+        const timeVal = document.getElementById('timeVal');
+        const heatResult = document.getElementById('heatResult');
+        
+        const wire = document.getElementById('wire');
+        const wireHeat = document.getElementById('wireHeat');
+        const wireGlow = document.getElementById('wireGlow');
+        const electronContainer = document.getElementById('electronContainer');
+
+        const currentCanvas = document.getElementById('currentGraph');
+        const resCanvas = document.getElementById('resGraph');
+
+        let electrons = [];
+
+        function initElectrons() {
+            electronContainer.innerHTML = '';
+            electrons = [];
+            const count = 30;
+            for(let i=0; i<count; i++) {
+                const el = document.createElement('div');
+                el.className = 'absolute w-1.5 h-1.5 bg-blue-400 rounded-full shadow-[0_0_5px_rgba(96,165,250,0.8)]';
+                const x = Math.random() * 100;
+                const y = 40 + Math.random() * 20; // centered vertically around wire
+                el.style.left = x + '%';
+                el.style.top = y + '%';
+                electronContainer.appendChild(el);
+                electrons.push({
+                    element: el,
+                    x: x
+                });
+            }
+        }
+
+        function updateSimulation() {
+            const I = parseFloat(currentSlider.value);
+            const R = parseFloat(resSlider.value);
+            const T = parseFloat(timeSlider.value);
+            
+            // Calculate Q
+            const Q = I * I * R * T;
+            
+            // Update Labels
+            currentVal.textContent = I.toFixed(1);
+            resVal.textContent = R.toFixed(1);
+            timeVal.textContent = T.toFixed(1);
+            heatResult.textContent = Q.toFixed(2) + " Дж";
+
+            // Visual Heat (Max expected Q approx 10^2 * 20 * 10 = 20000, but for visual 200 is enough)
+            const heatFactor = Math.min(Q / 500, 1);
+            wireHeat.style.opacity = heatFactor;
+            wireGlow.setAttribute('fill', `rgba(255, 69, 0, ${heatFactor * 0.8})`);
+            
+            // Vibrate wire if very hot
+            if (heatFactor > 0.5) {
+                wire.classList.add('wire-vibrate');
+            } else {
+                wire.classList.remove('wire-vibrate');
+            }
+
+            // Electron speed based on I
+            const speed = I * 0.5;
+            electrons.forEach(el => {
+                el.x += speed;
+                if (el.x > 90) el.x = 10; // Wrap within wire area
+                el.element.style.left = el.x + '%';
+                el.element.style.opacity = I > 0 ? 1 : 0;
+            });
+
+            drawGraphs(I, R, T);
+            requestAnimationFrame(() => {}); 
+        }
+
+        function drawGraphs(curI, curR, curT) {
+            // Draw Q(I) - Parabola
+            const ctxI = currentCanvas.getContext('2d');
+            ctxI.clearRect(0,0,300,150);
+            ctxI.strokeStyle = '#94a3b8';
+            ctxI.beginPath();
+            ctxI.moveTo(20, 130);
+            ctxI.lineTo(280, 130); // X axis
+            ctxI.moveTo(20, 20);
+            ctxI.lineTo(20, 130); // Y axis
+            ctxI.stroke();
+
+            ctxI.strokeStyle = '#f97316';
+            ctxI.lineWidth = 2;
+            ctxI.beginPath();
+            for(let i=0; i<=10; i+=0.5) {
+                const x = 20 + (i / 10) * 250;
+                const y = 130 - ( (i*i * curR * curT) / (100 * 20 * 10) ) * 110; 
+                if(i===0) ctxI.moveTo(x, y);
+                else ctxI.lineTo(x, y);
+            }
+            ctxI.stroke();
+            // Indicator point
+            const pXi = 20 + (curI / 10) * 250;
+            const pYi = 130 - ( (curI*curI * curR * curT) / (2000) ) * 110;
+            ctxI.fillStyle = '#f97316';
+            ctxI.beginPath(); ctxI.arc(pXi, pYi, 4, 0, Math.PI*2); ctxI.fill();
+
+            // Draw Q(R) - Linear
+            const ctxR = resCanvas.getContext('2d');
+            ctxR.clearRect(0,0,300,150);
+            ctxR.strokeStyle = '#94a3b8';
+            ctxR.beginPath();
+            ctxR.moveTo(20, 130); ctxR.lineTo(280, 130);
+            ctxR.moveTo(20, 20); ctxR.lineTo(20, 130);
+            ctxR.stroke();
+
+            ctxR.strokeStyle = '#f97316';
+            ctxR.beginPath();
+            for(let r=1; r<=20; r++) {
+                const x = 20 + (r / 20) * 250;
+                const y = 130 - ( (curI*curI * r * curT) / 2000 ) * 110;
+                if(r===1) ctxR.moveTo(x, y);
+                else ctxR.lineTo(x, y);
+            }
+            ctxR.stroke();
+            // Indicator point
+            const pXr = 20 + (curR / 20) * 250;
+            const pYr = 130 - ( (curI*curI * curR * curT) / 2000 ) * 110;
+            ctxR.fillStyle = '#f97316';
+            ctxR.beginPath(); ctxR.arc(pXr, pYr, 4, 0, Math.PI*2); ctxR.fill();
+        }
+
+        // Animation loop for electrons
+        function animate() {
+            updateSimulation();
+            setTimeout(() => {
+                requestAnimationFrame(animate);
+            }, 30);
+        }
+
+        currentSlider.addEventListener('input', updateSimulation);
+        resSlider.addEventListener('input', updateSimulation);
+        timeSlider.addEventListener('input', updateSimulation);
+
+        window.onload = () => {
+            initElectrons();
+            animate();
+        };
+    </script>
+</body>
+</html>
+
+
